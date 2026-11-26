@@ -98,13 +98,43 @@ export function ConfirmationDialogProvider({
   }, [activeRequestId, initialFocus])
   const openingGesture = displayedRequest?.options.ignoresOpeningGesture
   const guarded = openingGesture === true || openingGesture === 'buttons'
+  // Keys pressed on this prompt's buttons since it opened. A Space released without one was
+  // pressed before it opened (a button activates on Space's release, as a click with no count):
+  // that click is the opening gesture too. Clicks with no key at all (pointer, assistive tech)
+  // keep the usual rule.
+  const keysDown = useRef(new Set<string>())
+  const strayRelease = useRef(false)
+  useLayoutEffect(() => {
+    keysDown.current = new Set()
+    strayRelease.current = false
+  }, [activeRequestId])
   // Why: the gesture that opened the prompt may still be repeating or clicking, and either answer can stick.
   const ignoreRepeatedKey = (event: React.KeyboardEvent): void => {
     if (guarded && event.repeat) {
       event.preventDefault()
+      return
+    }
+    keysDown.current.add(event.key)
+    strayRelease.current = false
+  }
+  const ignoreStrayRelease = (event: React.KeyboardEvent): void => {
+    const pressedHere = keysDown.current.delete(event.key)
+    // Enter acts on press (its repeats are withheld above); Space acts on release.
+    if (guarded && !pressedHere && event.key === ' ') {
+      event.preventDefault()
+      strayRelease.current = true
     }
   }
-  const isFreshClick = (event: React.MouseEvent): boolean => !guarded || event.detail <= 1
+  const isFreshClick = (event: React.MouseEvent): boolean => {
+    if (!guarded) {
+      return true
+    }
+    if (strayRelease.current && event.detail === 0) {
+      strayRelease.current = false
+      return false
+    }
+    return event.detail <= 1
+  }
 
   useEffect(() => {
     // This dialog bypasses activeModal; block contextual tours explicitly while it is open.
@@ -257,6 +287,7 @@ export function ConfirmationDialogProvider({
               <DialogCancel
                 ref={cancelButtonRef}
                 onKeyDown={ignoreRepeatedKey}
+                onKeyUp={ignoreStrayRelease}
                 onClick={(event) => {
                   event.preventDefault()
                   if (!isFreshClick(event)) {
@@ -276,6 +307,7 @@ export function ConfirmationDialogProvider({
               size="sm"
               variant={options?.confirmVariant ?? 'default'}
               onKeyDown={ignoreRepeatedKey}
+              onKeyUp={ignoreStrayRelease}
               onClick={(event) => {
                 if (isFreshClick(event)) {
                   settleActiveRequest(true)
