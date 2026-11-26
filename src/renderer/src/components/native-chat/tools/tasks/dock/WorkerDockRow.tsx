@@ -36,7 +36,7 @@ function Age({ at, visible }: { at: number | null; visible: boolean }) {
   )
 }
 
-/** One panel row: status mark and the full title, then model and time; on hover or
+/** One panel row on one line: status mark, title and age (model in the tooltip); on hover or
  *  focus Stop or Clear cover the row's end.
  *  The open button stretches over the whole row, so a press anywhere but the action opens it. A row
  *  whose details have not arrived yet keeps the same button, so focus on it survives their arrival. */
@@ -88,7 +88,7 @@ export const WorkerDockRow = memo(function WorkerDockRow({
     .filter(Boolean)
     .join(' · ')
   const tooltip = row
-    ? [row.name, title === row.title ? '' : row.title, title, state, reason, remote]
+    ? [row.name, row.model, title === row.title ? '' : row.title, title, state, reason, remote]
         .filter(Boolean)
         .join(' · ')
     : undefined
@@ -104,26 +104,20 @@ export const WorkerDockRow = memo(function WorkerDockRow({
         aria-label={label}
         aria-disabled={row ? undefined : true}
         title={tooltip}
-        className="flex min-w-0 flex-1 items-start gap-2 py-0.5 pl-2 text-left text-sm after:absolute after:inset-0 after:rounded-md focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring aria-disabled:text-muted-foreground"
+        className="flex h-8 min-w-0 flex-1 items-center gap-2 pl-2 text-left text-sm whitespace-nowrap after:absolute after:inset-0 after:rounded-md focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring aria-disabled:text-muted-foreground"
         onClick={(event) => {
           if (row) {
             onOpen(row, event.currentTarget)
           }
         }}
       >
-        <span className="flex h-5 shrink-0 items-center">
-          <WorkerDockGlyph glyph={row ? workerDockGlyph(row) : 'queued'} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="line-clamp-3 break-words">{title}</span>
-          {row && (row.model || row.changedAt !== null) ? (
-            <span className="truncate text-xs text-muted-foreground">
-              {row.model}
-              {row.model && row.changedAt !== null ? ' · ' : null}
-              <Age at={row.changedAt} visible={visible} />
-            </span>
-          ) : null}
-        </span>
+        <WorkerDockGlyph glyph={row ? workerDockGlyph(row) : 'queued'} />
+        <span className="min-w-0 flex-1 truncate">{title}</span>
+        {row && row.changedAt !== null ? (
+          <span className="shrink-0 text-xs text-muted-foreground">
+            <Age at={row.changedAt} visible={visible} />
+          </span>
+        ) : null}
       </button>
       {/* Over the row's end on hover or focus, so at rest the title has the row's whole width. At rest it
           is transparent and takes no presses (a press there opens the row), but stays in the

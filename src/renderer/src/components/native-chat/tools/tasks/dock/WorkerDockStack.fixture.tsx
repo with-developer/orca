@@ -1,6 +1,17 @@
 import { defineFixture } from '../../../../../component-fixtures/component-fixture'
 import { workerDockFixturePane } from './worker-dock-pane-fixture'
-import { FindBar, Tray, failedOnly, goal, many, mixed, running } from './worker-dock-stack-fixture'
+import {
+  FindBar,
+  Tray,
+  done,
+  failedOnly,
+  goal,
+  many,
+  mixed,
+  running,
+  single,
+  waiting
+} from './worker-dock-stack-fixture'
 
 // Dev-only: the worker chip and panel in the chat's whole stack above the message box.
 // Scrolled up, so Jump to latest shows above the chip or the open panel.
@@ -36,3 +47,8 @@ export const mixedFolded320 = stack(320, false, false, mixed)
 export const mixedOpen320 = stack(320, true, false, mixed)
 export const manyFolded390 = stack(390, false, false, many)
 export const manyOpen390 = stack(390, true, false, many)
+export const singleFolded320 = stack(320, false, false, single)
+export const singleOpen320 = stack(320, true, false, single)
+export const waitingFolded390 = stack(390, false, false, waiting)
+export const doneFolded390 = stack(390, false, false, done)
+export const manyFolded1000 = stack(1000, false, false, many)

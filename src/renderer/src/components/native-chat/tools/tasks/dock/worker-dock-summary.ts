@@ -39,6 +39,7 @@ export function workerDockSummary(
   return {
     failures,
     needsYou,
+    running,
     mixed: kinds.size > 1,
     total,
     label: countLabel,
@@ -46,30 +47,45 @@ export function workerDockSummary(
   }
 }
 
-/** The folded chip's text, never empty: "3 workers", "2 failed" once only failures remain, or the
- *  empty copy with no rows. A held roster can outlive its live count by a gesture, so it then
- *  counts its own rows. */
+/** The chip's text, never empty: the one worker's title, "1 needs you · 4 workers", "3 running",
+ *  "3 workers", or the empty copy with no rows. A held roster can outlive its live count by a
+ *  gesture, so it then counts its own rows. */
 export function workerDockChipLabel(
   t: Translate,
   {
     summary,
     rows,
-    empty
+    empty,
+    single
   }: {
-    summary: { total: number; failures: number; label: string }
+    summary: { total: number; failures: number; needsYou: number; running: number; label: string }
     rows: number
     empty: string | null
+    /** The title of the only worker, when there is exactly one. */
+    single: string | null
   }
 ): string {
   if (empty !== null) {
     return empty
   }
+  if (single !== null && (summary.total || rows) === 1) {
+    return single
+  }
   if (!summary.total) {
     return workerDockWorkerCount(t, rows)
   }
-  return summary.failures === summary.total
-    ? t('components.native-chat.workerDock.failedCount', '{{count}} failed', {
-        count: summary.failures
+  const attention = summary.failures + summary.needsYou
+  if (attention) {
+    return [
+      t('components.native-chat.workerDock.needsYouCount', '{{count}} needs you', {
+        count: attention
+      }),
+      summary.label
+    ].join(' · ')
+  }
+  return summary.running
+    ? t('components.native-chat.workerDock.runningCount', '{{count}} running', {
+        count: summary.running
       })
     : summary.label
 }
