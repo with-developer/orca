@@ -22,6 +22,7 @@ export function handleMultiplexInputFrame(
   const inputClaimTail = stream.isMobile ? Promise.resolve(true) : stream.desktopClaimTail
   const inputSessionId = frame.seq > 0 ? stream.inputSessionId : null
   const sequenced = inputSessionId !== null
+  const arrivedAt = performance.now()
   // Mark policy-dropped locked/unclaimed input applied so replay cannot run it later; empty sequences fill abandoned slots.
   const deliver = async (): Promise<TerminalInputWriteOutcome> => {
     if (!text || isTerminalInputLockedForClient(runtime, stream.ptyId, stream.client)) {
@@ -36,6 +37,7 @@ export function handleMultiplexInputFrame(
       text,
       client: stream.client,
       isMobile: stream.isMobile,
+      arrivedAt,
       // Ack only after provider handoff because clients delete their replay copy.
       requireWriteSettlement: sequenced
     })
@@ -49,7 +51,7 @@ export function handleMultiplexInputFrame(
         : 'delivery-unknown'
   }
   if (inputSessionId === null) {
-    void deliver()
+    stream.unsequencedInputTail = stream.unsequencedInputTail.then(deliver).catch(() => undefined)
     return
   }
   // Ack duplicates too because prior ack may be lost; refusals request in-stream resend, never remount.
