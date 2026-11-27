@@ -119,6 +119,7 @@ export async function readWorktreeLiveTerminalSurfaceOwners(
       limit: OWNER_LISTING_LIMIT,
       requireFreshPtyLiveness: true,
       includeVisualLayouts: false,
+      includePreview: false,
       // Main places unshown live terminals before listing; this sweep only reads its panes.
       ...(ORCA_LAYOUT_OWNER_IS_MAIN ? { placeUnshownLiveTerminals: true } : {})
     }

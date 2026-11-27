@@ -133,7 +133,8 @@ export async function resolveTerminalOrphanInventory(args: {
           worktree: toRuntimeWorktreeSelector(snapshot.worktree),
           handles: inventoryHandles,
           requireFreshPtyLiveness: true,
-          includeVisualLayouts: false
+          includeVisualLayouts: false,
+          includePreview: false
         },
         timeoutMs: 15_000,
         expectedEnvironmentPairingRevision

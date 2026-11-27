@@ -55,7 +55,8 @@ async function probeHost(
       limit: 1,
       // Require daemon liveness: stale PTY records can falsely look empty. terminal_liveness_unavailable becomes unverifiable.
       requireFreshPtyLiveness: true,
-      includeVisualLayouts: false
+      includeVisualLayouts: false,
+      includePreview: false
     },
     timeoutMs: 15_000,
     expectedEnvironmentPairingRevision

@@ -20,6 +20,16 @@ function terminalRowRange(terminal: Terminal, limit?: number) {
   }
 }
 
+export function readHeadlessTerminalVisibleRange(terminal: Terminal) {
+  const buffer = terminal.buffer.active
+  const start = buffer.viewportY
+  return {
+    start,
+    endExclusive: Math.min(buffer.length, start + terminal.rows),
+    totalLength: buffer.length
+  }
+}
+
 export function readHeadlessTerminalLines(terminal: Terminal, limit?: number): string[] {
   const { buffer, start, end } = terminalRowRange(terminal, limit)
   const lines: string[] = []
@@ -27,6 +37,24 @@ export function readHeadlessTerminalLines(terminal: Terminal, limit?: number): s
     lines.push(buffer.getLine(row)?.translateToString(true) ?? '')
   }
   return lines
+}
+
+/** Reads the viewport up from its bottom row, stopping once `maxNonBlank` rows hold text or after `maxRows` rows. */
+export function readHeadlessTerminalBottomLines(
+  terminal: Terminal,
+  maxNonBlank: number,
+  maxRows: number
+): string[] {
+  const { buffer, start, end } = terminalRowRange(terminal)
+  const lowest = Math.max(start, end - maxRows)
+  const lines: string[] = []
+  let nonBlank = 0
+  for (let row = end - 1; row >= lowest && nonBlank < maxNonBlank; row -= 1) {
+    const text = buffer.getLine(row)?.translateToString(true) ?? ''
+    nonBlank += text.trim().length > 0 ? 1 : 0
+    lines.push(text)
+  }
+  return lines.toReversed()
 }
 
 export function readHeadlessTerminalRows(

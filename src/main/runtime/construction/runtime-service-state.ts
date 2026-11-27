@@ -139,6 +139,7 @@ export abstract class OrcaRuntimeWithStopRequestedPtyIds extends OrcaRuntimeWith
     buildLeafSummary: (leaf, worktrees, livePtyIds) =>
       this.buildTerminalSummary(leaf, worktrees, livePtyIds),
     buildPtySummary: (pty, worktrees) => this.buildPtyTerminalSummary(pty, worktrees),
+    alternateScreenGridPreview: (ptyId, preview) => this.alternateScreenGridPreview(ptyId, preview),
     getSnapshots: () => this.mobileSessionTabsByWorktree,
     getTabTitle: (tabId) => this.tabs.get(tabId)?.title ?? null,
     getTopologyRevision: (worktreeId) => this.getTerminalTopologyRevision(worktreeId),
