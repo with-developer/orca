@@ -237,7 +237,9 @@ export async function syncRuntimeGraph(): Promise<void> {
     }
     commitMobileSessionPublication(mobileSessionTabs, result?.mobileSessionResyncWorktrees)
     const currentState = graphState.getStoreState()
-    if (!result?.agentSenderRevision) {
+    if (result?.agentSenderDelta) {
+      currentState?.applyAgentSenderDelta?.('local', result.agentSenderDelta)
+    } else if (!result?.agentSenderRevision) {
       currentState?.setAgentSenderPublication?.('local', result?.agentSenderAssociations)
     }
     applyOrchestrationReply(currentState, state, orchestrationBase, result)

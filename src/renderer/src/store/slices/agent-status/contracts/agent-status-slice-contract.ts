@@ -1,5 +1,8 @@
 import type { AcceptedAgentStatuses } from '../status-ownership/accepted-agent-statuses'
-import type { AgentSenderPublication } from '../../../../../../shared/orchestration/mailbox/agent-sender-associations'
+import type {
+  AgentSenderDelta,
+  AgentSenderPublication
+} from '../../../../../../shared/orchestration/mailbox/agent-sender-associations'
 import type { AgentSenderPublications } from '@/runtime/native-chat/agent-senders/agent-sender-publication-patch'
 import type {
   AgentLaunchConfigRegistryEntry,
@@ -37,6 +40,7 @@ import type { ProgramStatusFacet } from '../../../../../../shared/program-status
 export type AgentStatusSlice = {
   agentSenderPublicationsByHost: AgentSenderPublications
   setAgentSenderPublication: (host: string, publication: AgentSenderPublication | undefined) => void
+  applyAgentSenderDelta: (host: string, delta: AgentSenderDelta) => void
   /** Explicit agent status entries keyed by `${tabId}:${leafId}`; real-time only, not persisted. */
   agentStatusByPaneKey: AcceptedAgentStatuses
   /** Pane conversation identity and first session clock; transient and independent of agent occupancy. */

@@ -1,5 +1,6 @@
 import type { BrowserPageInventoryEntry } from '../../browser/runtime/browser-page-inventory'
 import type {
+  AgentSenderDelta,
   AgentSenderPublication,
   AgentSenderRevision
 } from '../../orchestration/mailbox/agent-sender-associations'
@@ -198,6 +199,8 @@ export type RuntimeNativeChatLaunchDraftResolution = {
 
 export type RuntimeSyncWindowGraphResult = RuntimeStatus & {
   agentSenderAssociations?: AgentSenderPublication
+  /** Incremental worktree-scope updates from the window's base when host fields are unchanged. */
+  agentSenderDelta?: AgentSenderDelta
   /** Sent instead of the publication when the window's base is still current. */
   agentSenderRevision?: AgentSenderRevision
   agentOrchestrationByPaneKey?: Record<string, AgentStatusOrchestrationContext>

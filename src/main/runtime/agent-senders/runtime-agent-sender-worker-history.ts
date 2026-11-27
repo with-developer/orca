@@ -89,7 +89,9 @@ export class AgentSenderWorkerHistory {
     const dirty = readAgentSenderDirtyKeys(db)
     const version = db.db.pragma('data_version', { simple: true })
     if (version !== this.dataVersion) {
-      this.reset()
+      if (panes.length > 0 || this.slices.size > 0 || this.cold) {
+        this.reset()
+      }
       this.dataVersion = version
     }
     const live = new Map(panes.map((pane) => [pane.paneKey, pane]))

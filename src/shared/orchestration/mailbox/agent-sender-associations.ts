@@ -21,3 +21,85 @@ export type AgentSenderPublication = {
   /** Every publishing host stamps one; hosts that predate publications send no field at all. */
   revision: AgentSenderRevision
 }
+
+/** Incremental worktree-scope updates from a known base revision within the same epoch when
+ *  host-wide principals and peerFingerprint did not change. */
+export type AgentSenderDelta = {
+  baseRevision: AgentSenderRevision
+  revision: AgentSenderRevision
+  scopes: readonly (readonly [worktreeId: string, publication: AgentSenderPublication])[]
+}
+
+export type AgentSenderContent = Omit<AgentSenderPublication, 'revision'>
+
+function sameAssociation(a: AgentSenderAssociation, b: AgentSenderAssociation): boolean {
+  return (
+    a === b ||
+    (a.identity === b.identity &&
+      a.paneKey === b.paneKey &&
+      a.worktreeId === b.worktreeId &&
+      a.sessionId === b.sessionId &&
+      a.dispatchActor === b.dispatchActor)
+  )
+}
+
+function sameAttachment(
+  a: AgentSenderAssociation & { homePeerFingerprint: string },
+  b: AgentSenderAssociation & { homePeerFingerprint: string }
+): boolean {
+  return a === b || (a.homePeerFingerprint === b.homePeerFingerprint && sameAssociation(a, b))
+}
+
+/** Host-wide fields shared by every worktree scope on a publication. */
+export function sameAgentSenderHostFields(a: AgentSenderContent, b: AgentSenderContent): boolean {
+  if (a.peerFingerprint !== b.peerFingerprint) {
+    return false
+  }
+  if (a.principals === b.principals) {
+    return true
+  }
+  if (a.principals.length !== b.principals.length) {
+    return false
+  }
+  for (let i = 0; i < a.principals.length; i++) {
+    const left = a.principals[i]
+    const right = b.principals[i]
+    if (
+      left !== right &&
+      (left.peerFingerprint !== right.peerFingerprint ||
+        left.homePeerFingerprint !== right.homePeerFingerprint)
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+/** Structural field-by-field comparison without JSON.stringify allocations; revision never counts. */
+export function sameAgentSenderContent(a: AgentSenderContent, b: AgentSenderContent): boolean {
+  if (a === b) {
+    return true
+  }
+  if (
+    a.associations.length !== b.associations.length ||
+    a.attachments.length !== b.attachments.length ||
+    !sameAgentSenderHostFields(a, b)
+  ) {
+    return false
+  }
+  if (a.associations !== b.associations) {
+    for (let i = 0; i < a.associations.length; i++) {
+      if (!sameAssociation(a.associations[i], b.associations[i])) {
+        return false
+      }
+    }
+  }
+  if (a.attachments !== b.attachments) {
+    for (let i = 0; i < a.attachments.length; i++) {
+      if (!sameAttachment(a.attachments[i], b.attachments[i])) {
+        return false
+      }
+    }
+  }
+  return true
+}

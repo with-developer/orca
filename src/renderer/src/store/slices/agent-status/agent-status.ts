@@ -1,5 +1,8 @@
 import { acceptedAgentStatuses } from './status-ownership/accepted-agent-statuses'
-import { agentSenderPublicationPatch } from '@/runtime/native-chat/agent-senders/agent-sender-publication-patch'
+import {
+  agentSenderDeltaPatch,
+  agentSenderPublicationPatch
+} from '@/runtime/native-chat/agent-senders/agent-sender-publication-patch'
 import type { StateCreator } from 'zustand'
 import type { AppState } from '../../types'
 import type { AgentStatusSlice } from './contracts/agent-status-slice-contract'
@@ -62,6 +65,11 @@ export const createAgentStatusSlice: StateCreator<AppState, [], [], AgentStatusS
     setAgentSenderPublication: (host, publication) =>
       storeSet((state) => {
         const patch = agentSenderPublicationPatch(state, host, '*', publication)
+        return patch.agentSenderPublicationsByHost ? patch : state
+      }),
+    applyAgentSenderDelta: (host, delta) =>
+      storeSet((state) => {
+        const patch = agentSenderDeltaPatch(state, host, delta)
         return patch.agentSenderPublicationsByHost ? patch : state
       }),
     subscribeAgentStatusChanges: runtime.subscribeAgentStatusChanges,

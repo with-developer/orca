@@ -1,7 +1,9 @@
 import type { AppState } from '@/store/types'
-import type {
-  AgentSenderPublication,
-  AgentSenderRevision
+import {
+  sameAgentSenderContent,
+  type AgentSenderDelta,
+  type AgentSenderPublication,
+  type AgentSenderRevision
 } from '../../../../../shared/orchestration/mailbox/agent-sender-associations'
 
 export type AgentSenderPublications = Record<string, Record<string, AgentSenderPublication>>
@@ -23,16 +25,50 @@ export function deliveredAgentSenderRevision(
   return deliveredRevisions.get(publication) ?? publication.revision
 }
 
-/** Field by field, as the index reads them; the revision stamp never counts. */
-function sameContent(a: AgentSenderPublication, b: AgentSenderPublication): boolean {
-  return (
-    a.peerFingerprint === b.peerFingerprint &&
-    a.associations.length === b.associations.length &&
-    a.attachments.length === b.attachments.length &&
-    JSON.stringify(a.principals) === JSON.stringify(b.principals) &&
-    JSON.stringify(a.associations) === JSON.stringify(b.associations) &&
-    JSON.stringify(a.attachments) === JSON.stringify(b.attachments)
-  )
+/** Apply incremental worktree-scope updates on top of the current whole-host baseline without
+ *  replacing `scopes['*']`, so downstream sender indexes only diff the touched worktrees. */
+export function agentSenderDeltaPatch(
+  state: State,
+  host: string,
+  delta: AgentSenderDelta
+): Partial<State> {
+  const source = state.agentSenderPublicationsByHost ?? EMPTY
+  const scopes = source[host]
+  const whole = scopes?.['*']
+  if (!scopes || !whole) {
+    return {}
+  }
+  const applied = deliveredAgentSenderRevision(whole)
+  if (
+    applied.epoch !== delta.baseRevision.epoch ||
+    applied.revision !== delta.baseRevision.revision
+  ) {
+    return {}
+  }
+  let nextScopes: Record<string, AgentSenderPublication> | null = null
+  for (const [worktreeId, publication] of delta.scopes) {
+    if (worktreeId === '*') {
+      continue
+    }
+    const current = (nextScopes ?? scopes)[worktreeId]
+    const currentRev = current && deliveredAgentSenderRevision(current)
+    if (
+      currentRev?.epoch === publication.revision.epoch &&
+      currentRev.revision >= publication.revision.revision
+    ) {
+      continue
+    }
+    if (current && sameAgentSenderContent(current, publication)) {
+      deliveredRevisions.set(current, publication.revision)
+      continue
+    }
+    if (!nextScopes) {
+      nextScopes = { ...scopes }
+    }
+    nextScopes[worktreeId] = stored(publication)
+  }
+  deliveredRevisions.set(whole, delta.revision)
+  return nextScopes ? { agentSenderPublicationsByHost: { ...source, [host]: nextScopes } } : {}
 }
 
 /** A host publishes once any frame carries the field; a frame without it changes only its own
@@ -90,7 +126,7 @@ export function agentSenderPublicationPatch(
     const newer = entries.filter(([, value]) => later(value))
     const whole = scopes?.['*']
     // Every scope stays, and the baseline reads the same: nothing derived from it moves.
-    if (whole && newer.length === entries.length && sameContent(whole, publication)) {
+    if (whole && newer.length === entries.length && sameAgentSenderContent(whole, publication)) {
       return unchanged(whole)
     }
     return set({ ...Object.fromEntries(newer), '*': stored(publication) })
@@ -99,7 +135,7 @@ export function agentSenderPublicationPatch(
   if (newerOrEqual(delivered(current))) {
     return {}
   }
-  return current && sameContent(current, publication)
+  return current && sameAgentSenderContent(current, publication)
     ? unchanged(current)
     : set({ ...scopes, [scope]: stored(publication) })
 }

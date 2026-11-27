@@ -1,8 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import type {
-  AgentSenderAssociation,
-  AgentSenderPublication,
-  AgentSenderRevision
+import {
+  sameAgentSenderContent,
+  sameAgentSenderHostFields,
+  type AgentSenderAssociation,
+  type AgentSenderDelta,
+  type AgentSenderPublication,
+  type AgentSenderRevision
 } from '../../../shared/orchestration/mailbox/agent-sender-associations'
 
 export type AgentSenderScope = AgentSenderPublication & {
@@ -10,19 +13,14 @@ export type AgentSenderScope = AgentSenderPublication & {
   attachments: (AgentSenderAssociation & { homePeerFingerprint: string })[]
 }
 type Content = Omit<AgentSenderScope, 'revision'>
-
-/** Field by field, as clients read them; key order and the revision stamp never count. */
-function sameContent(
-  a: Omit<AgentSenderPublication, 'revision'>,
-  b: Omit<AgentSenderPublication, 'revision'>
-): boolean {
-  return (
-    a.peerFingerprint === b.peerFingerprint &&
-    JSON.stringify(a.principals) === JSON.stringify(b.principals) &&
-    JSON.stringify(a.associations) === JSON.stringify(b.associations) &&
-    JSON.stringify(a.attachments) === JSON.stringify(b.attachments)
-  )
+type DeltaRecord = {
+  revision: number
+  hostChanged: boolean
+  changedWorktrees: readonly string[]
 }
+
+const MAX_DELTA_REVISIONS = 64
+const MAX_DELTA_SCOPES = 64
 
 /** The host's one immutable sender publication and its worktree scopes. Its revision moves only
  *  when what clients read changes, so every delivery can say "unchanged" without the rows; the
@@ -40,6 +38,7 @@ export class AgentSenderPublisher {
   private framed = new Map<string, AgentSenderPublication>()
   private contents = new Map<string, Content>()
   private empty = this.stamp({ ...this.hostFields(), associations: [], attachments: [] })
+  private readonly deltas: DeltaRecord[] = []
 
   current(): AgentSenderPublication {
     return this.publication
@@ -91,21 +90,66 @@ export class AgentSenderPublisher {
     return { scoped: this.scoped.size, framed: this.framed.size }
   }
 
-  /** A window graph reply: the rows only when the window's applied base is not current. */
+  /** A window graph reply: unchanged revision, incremental scope delta, or full baseline. */
   forGraph(base: AgentSenderRevision | undefined): {
     agentSenderAssociations?: AgentSenderPublication
+    agentSenderDelta?: AgentSenderDelta
     agentSenderRevision?: AgentSenderRevision
   } {
     const current = this.publication.revision
-    return base && current && base.epoch === current.epoch && base.revision === current.revision
-      ? { agentSenderRevision: current }
-      : { agentSenderAssociations: this.publication }
+    if (base && current && base.epoch === current.epoch && base.revision === current.revision) {
+      return { agentSenderRevision: current }
+    }
+    if (
+      base &&
+      current &&
+      base.epoch === current.epoch &&
+      base.revision < current.revision &&
+      this.deltas.length > 0 &&
+      this.deltas[0].revision <= base.revision + 1
+    ) {
+      const changedWorktrees = new Set<string>()
+      let expected = base.revision + 1
+      let canDelta = true
+      for (const entry of this.deltas) {
+        if (entry.revision < expected) {
+          continue
+        }
+        if (entry.revision !== expected || entry.hostChanged) {
+          canDelta = false
+          break
+        }
+        for (const worktreeId of entry.changedWorktrees) {
+          changedWorktrees.add(worktreeId)
+          if (changedWorktrees.size > MAX_DELTA_SCOPES) {
+            canDelta = false
+            break
+          }
+        }
+        if (!canDelta) {
+          break
+        }
+        expected++
+      }
+      if (canDelta && expected === current.revision + 1) {
+        return {
+          agentSenderDelta: {
+            baseRevision: base,
+            revision: current,
+            scopes: [...changedWorktrees].map((id) => [id, this.scope(id)] as const)
+          }
+        }
+      }
+    }
+    return { agentSenderAssociations: this.publication }
   }
 
   publish(next: Content): void {
-    if (sameContent(next, this.publication)) {
+    if (sameAgentSenderContent(next, this.publication)) {
       return
     }
+    const hostChanged = !sameAgentSenderHostFields(next, this.publication)
+    const previousContents = this.contents
     this.revision++
     this.publication = this.stamp(next)
     const host = this.hostFields()
@@ -126,6 +170,24 @@ export class AgentSenderPublisher {
       scopeOf(row.worktreeId).attachments.push(row)
     }
     this.contents = new Map(scopes)
+    const changedWorktrees: string[] = []
+    if (!hostChanged) {
+      for (const id of previousContents.keys()) {
+        if (!this.contents.has(id)) {
+          changedWorktrees.push(id)
+        }
+      }
+      for (const [id, scope] of this.contents) {
+        const prev = previousContents.get(id)
+        if (!prev || !sameAgentSenderContent(prev, scope)) {
+          changedWorktrees.push(id)
+        }
+      }
+    }
+    this.deltas.push({ revision: this.revision, hostChanged, changedWorktrees })
+    if (this.deltas.length > MAX_DELTA_REVISIONS) {
+      this.deltas.splice(0, this.deltas.length - MAX_DELTA_REVISIONS)
+    }
     for (const id of this.scoped.keys()) {
       if (this.contents.has(id) || this.ownsScope(id)) {
         scopeOf(id)
@@ -135,7 +197,7 @@ export class AgentSenderPublisher {
     }
     for (const [id, scope] of scopes) {
       const previous = this.scoped.get(id)
-      if (!previous || !sameContent(previous, scope)) {
+      if (!previous || !sameAgentSenderContent(previous, scope)) {
         this.scoped.set(id, this.stamp(scope))
       }
     }
