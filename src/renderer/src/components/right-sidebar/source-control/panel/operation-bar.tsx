@@ -66,6 +66,28 @@ const OPERATION_ICONS = {
   revert: GitCommitHorizontal
 } as const
 
+/** Measures now, again whenever a slot or its hidden measurer resizes, and once web fonts load. */
+function observeForMeasure(measure: () => void, elements: (Element | null)[]): () => void {
+  measure()
+  const observer = new ResizeObserver(measure)
+  for (const element of elements) {
+    if (element) {
+      observer.observe(element)
+    }
+  }
+  let live = true
+  // A first measure can run on fallback font metrics; the text then shrinks without a resize.
+  void document.fonts?.ready.then(() => {
+    if (live) {
+      measure()
+    }
+  })
+  return () => {
+    live = false
+    observer.disconnect()
+  }
+}
+
 /**
  * The verb and its detail show whole or not at all. When they do not fit together, a conflict count
  * outranks the verb (the icon already names the operation); any other detail goes first.
@@ -95,12 +117,7 @@ function OperationStatusLabel({
             : 'none'
       )
     }
-    measure()
-    const observer = new ResizeObserver(measure)
-    if (slot.current) {
-      observer.observe(slot.current)
-    }
-    return () => observer.disconnect()
+    return observeForMeasure(measure, [slot.current, full.current, kept.current])
   }, [verb, detail, detailIsCount])
   const verbNode = <span className="font-medium text-foreground">{verb}</span>
   const detailNode = detail ? (
@@ -203,12 +220,7 @@ function ConflictsRow({
         (countMeasure.current?.scrollWidth ?? Infinity) + (button.current?.offsetWidth ?? 0)
       setCountShown(needed <= available)
     }
-    measure()
-    const observer = new ResizeObserver(measure)
-    if (row.current) {
-      observer.observe(row.current)
-    }
-    return () => observer.disconnect()
+    return observeForMeasure(measure, [row.current, countMeasure.current, button.current])
   }, [unresolvedCount])
   const countLabel = t(
     'auto.components.right.sidebar.SourceControl.rebaseConflictCount',
