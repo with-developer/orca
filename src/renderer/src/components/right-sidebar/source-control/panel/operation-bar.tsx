@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { GitCommitHorizontal, GitMerge, GitPullRequestArrow, Loader2, Sparkles } from 'lucide-react'
+import { GitCommitHorizontal, GitMerge, GitPullRequestArrow, Sparkles } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTranslate } from '@/i18n/use-translate'
@@ -20,6 +21,8 @@ export type OperationBarStep = {
 
 export type OperationBarProps = {
   operation: OperationBarOperation
+  /** Identifies what Abort would abort (workspace, host, operation, step); a change disarms it. */
+  abortTargetKey: string
   unresolvedCount: number
   /** A short state after the verb, e.g. "Empty step". */
   detailLabel?: string | null
@@ -142,32 +145,39 @@ function OperationStatusLabel({
 }
 
 const ABORT_ARM_MS = 3000
+// A second press this soon is the same gesture (double-click, double-tap), not a confirmation.
+const ABORT_CONFIRM_MIN_MS = 500
 
-/** First press arms Abort in place (same word, same width); a second press within 3s aborts. */
-function useArmedAbort(onAbort: () => void) {
-  const [armed, setArmed] = useState(false)
+/**
+ * First press arms Abort in place (same word, same width); a later, separate press within 3s aborts.
+ * The arm belongs to one target, so switching workspace, host, operation or step disarms it.
+ */
+function useArmedAbort(onAbort: () => void, targetKey: string) {
+  const [armedFor, setArmedFor] = useState<{ target: string; at: number } | null>(null)
+  const armed = armedFor?.target === targetKey
   useEffect(() => {
-    if (!armed) {
+    if (!armedFor) {
       return
     }
-    const timer = window.setTimeout(() => setArmed(false), ABORT_ARM_MS)
+    const timer = window.setTimeout(() => setArmedFor(null), ABORT_ARM_MS)
     return () => window.clearTimeout(timer)
-  }, [armed])
+  }, [armedFor])
   return {
     armed,
-    disarm: () => setArmed(false),
+    disarm: () => setArmedFor(null),
     press: () => {
-      if (armed) {
-        setArmed(false)
-        onAbort()
+      if (!armed) {
+        setArmedFor({ target: targetKey, at: performance.now() })
         return
       }
-      setArmed(true)
+      if (performance.now() - armedFor.at < ABORT_CONFIRM_MIN_MS) {
+        return
+      }
+      setArmedFor(null)
+      onAbort()
     }
   }
 }
-
-const COUNT_GAP_PX = 4
 
 function ConflictsRow({
   unresolvedCount,
@@ -183,12 +193,15 @@ function ConflictsRow({
   const [countShown, setCountShown] = useState(true)
   useLayoutEffect(() => {
     // The button label never shrinks, so the count (and its dot) hide whole when both do not fit.
+    // The row's gap and the button's -ml-1 cancel out, so only the right padding is subtracted.
     const measure = () => {
+      const rowEl = row.current
+      const available = rowEl
+        ? rowEl.clientWidth - Number.parseFloat(getComputedStyle(rowEl).paddingRight)
+        : 0
       const needed =
-        (countMeasure.current?.scrollWidth ?? Infinity) +
-        COUNT_GAP_PX +
-        (button.current?.offsetWidth ?? 0)
-      setCountShown(needed <= (row.current?.clientWidth ?? 0))
+        (countMeasure.current?.scrollWidth ?? Infinity) + (button.current?.offsetWidth ?? 0)
+      setCountShown(needed <= available)
     }
     measure()
     const observer = new ResizeObserver(measure)
@@ -205,7 +218,7 @@ function ConflictsRow({
   return (
     <div
       ref={row}
-      className="relative flex h-5 min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-foreground"
+      className="relative flex h-5 min-w-0 items-center gap-1 overflow-hidden pr-1 whitespace-nowrap text-foreground"
     >
       <span
         ref={countMeasure}
@@ -226,6 +239,8 @@ function ConflictsRow({
       <Button
         ref={button}
         type="button"
+        // Centers the dot: the button's own padding already spaces it from the sparkle.
+        className="-ml-1"
         variant="ghost"
         size="xs-compact"
         disabled={resolveWithAi.unavailable}
@@ -241,6 +256,7 @@ function ConflictsRow({
 /** One neutral bar for a paused rebase, merge, cherry-pick or revert, in the header status line. */
 export function OperationBar({
   operation,
+  abortTargetKey,
   unresolvedCount,
   detailLabel = null,
   abort,
@@ -250,7 +266,7 @@ export function OperationBar({
   const t = useTranslate()
   const copy = useOperationCopy(operation)
   const Icon = OPERATION_ICONS[operation]
-  const armedAbort = useArmedAbort(abort.onAbort)
+  const armedAbort = useArmedAbort(abort.onAbort, abortTargetKey)
   const conflictsRowShown = resolveWithAi !== null && unresolvedCount > 0
   const countLabel =
     unresolvedCount > 0 && !conflictsRowShown
@@ -283,7 +299,7 @@ export function OperationBar({
               tabIndex={0}
               role="img"
               aria-label={statusText}
-              className="shrink-0 rounded-sm text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
+              className="shrink-0 rounded-sm text-muted-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <Icon className="size-3.5" aria-hidden="true" />
             </span>
@@ -298,7 +314,7 @@ export function OperationBar({
         <span className="flex shrink-0 items-center gap-0.5">
           <ReasonButton
             variant="ghost-arm-destructive"
-            size="xs"
+            size="xs-snug"
             data-armed={armedAbort.armed || undefined}
             unavailable={abort.unavailable}
             reason={abortReason}
@@ -307,21 +323,36 @@ export function OperationBar({
             aria-label={copy.abortLabel}
             aria-busy={abort.busy || undefined}
             onBlur={armedAbort.disarm}
+            onKeyDown={(event) => {
+              // A held Enter repeats clicks; only a fresh press may arm or confirm.
+              if (event.key === 'Enter' && event.repeat) {
+                event.preventDefault()
+                return
+              }
+              if (event.key === 'Escape' && armedAbort.armed) {
+                event.stopPropagation()
+                armedAbort.disarm()
+              }
+            }}
             onPress={armedAbort.press}
           >
-            {abort.busy ? <Loader2 className="size-3 animate-spin" aria-hidden="true" /> : null}
+            {abort.busy ? <LoadingSpinner className="size-3" /> : null}
             {t('auto.components.right.sidebar.SourceControl.rebaseAbort', 'Abort')}
           </ReasonButton>
+          {/* The tooltip alone is silent to a screen reader, so arming is announced here. */}
+          <span className="sr-only" aria-live="polite">
+            {armedAbort.armed ? abortReason : null}
+          </span>
           <ReasonButton
             variant="default"
-            size="xs"
+            size="xs-snug"
             unavailable={step.unavailable}
             reason={step.reason}
             aria-label={step.ariaLabel}
             aria-busy={step.busy || undefined}
             onPress={step.onPress}
           >
-            {step.busy ? <Loader2 className="size-3 animate-spin" aria-hidden="true" /> : null}
+            {step.busy ? <LoadingSpinner className="size-3" /> : null}
             {step.label}
           </ReasonButton>
         </span>

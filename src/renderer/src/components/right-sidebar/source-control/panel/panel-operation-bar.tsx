@@ -25,10 +25,17 @@ export function SourceControlOperationBar({
   if (operation === 'unknown') {
     return null
   }
+  const abortTargetKey = [
+    worktreeId,
+    model.activeConnectionId ?? 'local',
+    operation,
+    model.activeGitStatusHead ?? ''
+  ].join('|')
   if (operation === 'rebase') {
     return model.baseRebaseState.kind === 'rebase_paused' ? (
       <RebaseOperationBar
         paused={model.baseRebaseState}
+        abortTargetKey={abortTargetKey}
         resolveWithAi={resolveWithAi}
         actions={{
           state: model.baseRebaseState,
@@ -47,6 +54,7 @@ export function SourceControlOperationBar({
     return (
       <MergeOperationBar
         model={model}
+        abortTargetKey={abortTargetKey}
         unresolvedCount={unresolvedCount}
         recoveryBusy={recoveryBusy}
         resolveWithAi={resolveWithAi}
@@ -56,6 +64,7 @@ export function SourceControlOperationBar({
   return (
     <SequencerOperationBar
       worktreeId={worktreeId}
+      abortTargetKey={abortTargetKey}
       operation={operation}
       unresolvedCount={unresolvedCount}
       disabled={recoveryBusy || model.isAbortingOperation || model.isCommitting}
@@ -76,11 +85,13 @@ function useResolveConflictsFirst(unresolvedCount: number): string | null {
 
 function MergeOperationBar({
   model,
+  abortTargetKey,
   unresolvedCount,
   recoveryBusy,
   resolveWithAi
 }: {
   model: SourceControlPanelModel
+  abortTargetKey: string
   unresolvedCount: number
   recoveryBusy: boolean
   resolveWithAi: OperationBarProps['resolveWithAi']
@@ -91,6 +102,7 @@ function MergeOperationBar({
   return (
     <OperationBar
       operation="merge"
+      abortTargetKey={abortTargetKey}
       unresolvedCount={unresolvedCount}
       abort={{
         unavailable: busy,
@@ -111,12 +123,14 @@ function MergeOperationBar({
 
 function SequencerOperationBar({
   worktreeId,
+  abortTargetKey,
   operation,
   unresolvedCount,
   disabled,
   resolveWithAi
 }: {
   worktreeId: string
+  abortTargetKey: string
   operation: Exclude<OperationBarOperation, 'rebase' | 'merge'>
   unresolvedCount: number
   disabled: boolean
@@ -132,6 +146,7 @@ function SequencerOperationBar({
   return (
     <OperationBar
       operation={operation}
+      abortTargetKey={abortTargetKey}
       unresolvedCount={unresolvedCount}
       abort={{
         unavailable,

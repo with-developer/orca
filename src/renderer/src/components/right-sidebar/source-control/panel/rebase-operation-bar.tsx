@@ -62,10 +62,12 @@ function useRebaseStepButton(actions: BaseRebaseActions, paused: PausedRebase): 
 export function RebaseOperationBar({
   actions,
   paused,
+  abortTargetKey,
   resolveWithAi
 }: {
   actions: BaseRebaseActions
   paused: PausedRebase
+  abortTargetKey: string
   resolveWithAi: OperationBarProps['resolveWithAi']
 }): React.JSX.Element {
   const t = useTranslate()
@@ -73,6 +75,7 @@ export function RebaseOperationBar({
   return (
     <OperationBar
       operation="rebase"
+      abortTargetKey={abortTargetKey}
       unresolvedCount={paused.unresolvedCount}
       detailLabel={
         paused.continueState === 'unreadable'

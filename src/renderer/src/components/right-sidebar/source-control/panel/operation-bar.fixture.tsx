@@ -52,11 +52,19 @@ function Bar({ kind, conflicts, ai = true }: Scenario): React.JSX.Element {
   const resolveWithAi = ai ? { unavailable: false, onPress: () => {} } : null
   if (kind === 'rebase') {
     const { paused, actions } = pausedRebase(conflicts)
-    return <RebaseOperationBar actions={actions} paused={paused} resolveWithAi={resolveWithAi} />
+    return (
+      <RebaseOperationBar
+        actions={actions}
+        paused={paused}
+        abortTargetKey="fixture|rebase"
+        resolveWithAi={resolveWithAi}
+      />
+    )
   }
   return (
     <OperationBar
       operation={kind}
+      abortTargetKey={`fixture|${kind}`}
       unresolvedCount={conflicts}
       abort={{ unavailable: false, busy: false, onAbort: () => {} }}
       step={{
@@ -131,7 +139,7 @@ export const cherryPickConflicts220 = at(220, { kind: 'cherry-pick', conflicts: 
 
 export const rebaseAbortArmed = defineFixture({
   width: 260 + 32,
-  render: () => <Panel kind="rebase" conflicts={0} />,
+  render: () => <Panel kind="rebase" conflicts={2} />,
   interact: (frame) => {
     frame.querySelector<HTMLButtonElement>('button[aria-label="Abort rebase"]')?.click()
   }

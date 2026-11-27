@@ -47,7 +47,7 @@ export function ReasonButton({
           </Button>
         </TooltipTrigger>
         {reason ? (
-          <TooltipContent side="bottom" sideOffset={6}>
+          <TooltipContent side="top" sideOffset={4}>
             {reason}
           </TooltipContent>
         ) : null}
