@@ -25,12 +25,17 @@ export function SourceControlOperationBar({
   if (operation === 'unknown') {
     return null
   }
-  const abortTargetKey = [
+  // Everything Abort would act on: workspace instance, Git owner, connection, operation and step.
+  // Merge and sequencer stops carry no incarnation token; their end unmounts the bar, clearing any arm.
+  const abortTargetKey = JSON.stringify([
     worktreeId,
-    model.activeConnectionId ?? 'local',
+    model.activeWorktreeInstanceId ?? null,
+    model.activeRepoTarget,
+    model.activeConnectionId ?? null,
     operation,
-    model.activeGitStatusHead ?? ''
-  ].join('|')
+    model.activeGitStatusHead ?? null,
+    operation === 'rebase' ? (model.rebaseStop?.token ?? null) : null
+  ])
   if (operation === 'rebase') {
     return model.baseRebaseState.kind === 'rebase_paused' ? (
       <RebaseOperationBar

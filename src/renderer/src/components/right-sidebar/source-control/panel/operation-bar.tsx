@@ -77,11 +77,13 @@ function observeForMeasure(measure: () => void, elements: (Element | null)[]): (
   }
   let live = true
   // A first measure can run on fallback font metrics; the text then shrinks without a resize.
-  void document.fonts?.ready.then(() => {
-    if (live) {
-      measure()
-    }
-  })
+  void document.fonts?.ready
+    .then(() => {
+      if (live) {
+        measure()
+      }
+    })
+    .catch(() => {})
   return () => {
     live = false
     observer.disconnect()
@@ -167,30 +169,45 @@ const ABORT_CONFIRM_MIN_MS = 500
 
 /**
  * First press arms Abort in place (same word, same width); a later, separate press within 3s aborts.
- * The arm belongs to one target, so switching workspace, host, operation or step disarms it.
+ * The arm belongs to one target: any change of targetKey clears it for good, so returning to an
+ * earlier target never revives it.
  */
 function useArmedAbort(onAbort: () => void, targetKey: string) {
-  const [armedFor, setArmedFor] = useState<{ target: string; at: number } | null>(null)
-  const armed = armedFor?.target === targetKey
+  const [arm, setArm] = useState<{ target: string; at: number | null }>({
+    target: targetKey,
+    at: null
+  })
+  let current = arm
+  if (arm.target !== targetKey) {
+    // Reset during render, before any press can read the old arm against the new target.
+    current = { target: targetKey, at: null }
+    setArm(current)
+  }
+  const armedAt = current.at
   useEffect(() => {
-    if (!armedFor) {
+    if (armedAt === null) {
       return
     }
-    const timer = window.setTimeout(() => setArmedFor(null), ABORT_ARM_MS)
+    const timer = window.setTimeout(
+      () => setArm((state) => (state.at === armedAt ? { ...state, at: null } : state)),
+      ABORT_ARM_MS
+    )
     return () => window.clearTimeout(timer)
-  }, [armedFor])
+  }, [armedAt])
   return {
-    armed,
-    disarm: () => setArmedFor(null),
+    armed: armedAt !== null,
+    disarm: () => setArm({ target: targetKey, at: null }),
     press: () => {
-      if (!armed) {
-        setArmedFor({ target: targetKey, at: performance.now() })
+      const now = performance.now()
+      // Expiry is checked here too, so a late timer can never leave a stale arm confirmable.
+      if (armedAt === null || now - armedAt > ABORT_ARM_MS) {
+        setArm({ target: targetKey, at: now })
         return
       }
-      if (performance.now() - armedFor.at < ABORT_CONFIRM_MIN_MS) {
+      if (now - armedAt < ABORT_CONFIRM_MIN_MS) {
         return
       }
-      setArmedFor(null)
+      setArm({ target: targetKey, at: null })
       onAbort()
     }
   }
