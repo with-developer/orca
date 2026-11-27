@@ -2,6 +2,7 @@ import { pullRequestKey } from '../../../shared/native-chat/transcript/notices/n
 import type { SqliteRow } from '../../sqlite/sqlite-statement'
 import type Database from '../../sqlite/sync-database'
 import { numberColumn, textColumn, textColumnValues } from './pr-watch-sqlite-columns'
+import { parsePRKey } from './pr-watch-types'
 
 /** Added without a user_version change, so an older build opens the journal and ignores them. */
 export function ensurePRWatchTables(db: Database.Database): void {
@@ -39,6 +40,8 @@ CREATE TABLE IF NOT EXISTS pr_event_deliveries (
   item_id  TEXT,
   PRIMARY KEY (chat_id, event_id)
 );
+CREATE INDEX IF NOT EXISTS pr_event_deliveries_pending
+  ON pr_event_deliveries (chat_id) WHERE state = 'pending';
 CREATE TABLE IF NOT EXISTS pr_pending_heads (
   pr_key        TEXT    NOT NULL,
   head_sha      TEXT    NOT NULL,
@@ -149,13 +152,24 @@ export function insertPRChatAction(db: Database.Database, action: PRChatAction):
 }
 
 export function readPRChatActions(db: Database.Database, prKey?: string): PRChatAction[] {
-  const rows =
-    prKey === undefined
-      ? db.prepare('SELECT * FROM pr_chat_actions ORDER BY observed_at').all()
-      : db
-          .prepare(`SELECT * FROM pr_chat_actions WHERE ${PR_KEY_SQL} = ? ORDER BY observed_at`)
-          .all(prKey)
-  return rows.flatMap(actionFromRow)
+  if (prKey === undefined) {
+    return db
+      .prepare('SELECT * FROM pr_chat_actions ORDER BY observed_at')
+      .all()
+      .flatMap(actionFromRow)
+  }
+  const parsed = parsePRKey(prKey)
+  if (!parsed) {
+    return []
+  }
+  return db
+    .prepare(
+      `SELECT * FROM pr_chat_actions
+        WHERE forge_host = ? AND owner = ? AND repo = ? AND number = ?
+        ORDER BY observed_at`
+    )
+    .all(parsed.host, parsed.owner, parsed.repo, parsed.number)
+    .flatMap(actionFromRow)
 }
 
 export function hasPRChatActionFrom(

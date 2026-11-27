@@ -282,13 +282,7 @@ export class PRWatchService {
     }
     const written = await this.deps.database.write({
       kind: 'head',
-      read: {
-        prKey,
-        headSha,
-        rollup,
-        isCurrentHead,
-        observedAt
-      }
+      read: { prKey, headSha, rollup, isCurrentHead, observedAt }
     })
     if (this.stopped) {
       return written.final
@@ -309,7 +303,8 @@ export class PRWatchService {
       () => this.stopped,
       this.chatWatches.keys(),
       (id) => this.deliveries.forget(id),
-      (key) => this.endChatWatch(key)
+      (key) => this.endChatWatch(key),
+      force
     )
   }
   private readonly failed = (error: unknown): void =>
