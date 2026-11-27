@@ -14909,7 +14909,6 @@
             "rebaseConflictCount_one": "{{count}} conflicto",
             "rebaseConflictCount_other": "{{count}} conflictos",
             "rebaseConflictCount_many": "{{count}} conflictos",
-            "rebasePaused": "Rebase en pausa",
             "rebaseResolveConflictsFirst": "Resuelve primero los conflictos",
             "rebaseAbort": "Abortar",
             "rebaseContinue": "Continuar",
@@ -15585,15 +15584,7 @@
               "conflict": {
                 "status": {
                   "cards": {
-                    "5302a1ddba": "Fusionar conflictos",
-                    "7f3af87549": "Rebase de conflictos",
-                    "6a8e9ad490": "Conflictos selectos",
-                    "bdf8772106": "Conflictos",
-                    "edc2d82a2b": "Fusión en progreso",
-                    "5c3707aa44": "Rebase en progreso",
-                    "ffe53a1da6": "Selección en progreso",
-                    "35eb76d323": "Operación en curso",
-                    "completeMerge": "Completar fusión"
+                    "bdf8772106": "Conflictos"
                   }
                 }
               },
@@ -27742,13 +27733,10 @@
     "loadFailed": "No se pudo cargar el historial de Git",
     "updateHost": "Actualiza Orca en {{host}} para abrir el grafo de Git",
     "title": "Grafo de Git",
-    "revertConflicts": "Conflictos de reversión",
-    "revertInProgress": "Reversión en curso",
     "abortOperationTitle": "¿Abortar {{operation}}?",
     "abortOperationDescription": "Esto cancela la operación en curso y puede descartar las resoluciones de conflictos realizadas durante ella.",
     "abortOperation": "Abortar {{operation}}",
     "recoveryFailed": "No se pudo finalizar la operación. Actualiza el control de código fuente e inténtalo de nuevo.",
-    "continueOperation": "Continuar {{operation}}",
     "reverting": "Revirtiendo",
     "updateActionsHost": "Actualiza Orca en {{host}} para realizar acciones sobre commits",
     "thisHost": "este host",

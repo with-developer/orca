@@ -11457,7 +11457,6 @@
             "rebaseConflictCount_one": "{{count}} conflito",
             "rebaseConflictCount_other": "{{count}} conflitos",
             "rebaseConflictCount_many": "{{count}} conflitos",
-            "rebasePaused": "Rebase pausado",
             "rebaseResolveConflictsFirst": "Resolva os conflitos primeiro",
             "rebaseAbort": "Abortar",
             "rebaseContinue": "Continuar",
@@ -12012,15 +12011,7 @@
               "conflict": {
                 "status": {
                   "cards": {
-                    "5302a1ddba": "Conflitos de merge",
-                    "7f3af87549": "Conflitos de rebase",
-                    "6a8e9ad490": "Conflitos de cherry-pick",
-                    "bdf8772106": "Conflitos",
-                    "edc2d82a2b": "Merge em andamento",
-                    "5c3707aa44": "Rebase em andamento",
-                    "ffe53a1da6": "Cherry-pick em andamento",
-                    "35eb76d323": "Operação em andamento",
-                    "completeMerge": "Concluir mesclagem"
+                    "bdf8772106": "Conflitos"
                   }
                 }
               },
@@ -27699,13 +27690,10 @@
     "loadFailed": "Não foi possível carregar o histórico do Git",
     "updateHost": "Atualize o Orca em {{host}} para abrir o grafo do Git",
     "title": "Grafo do Git",
-    "revertConflicts": "Conflitos de reversão",
-    "revertInProgress": "Reversão em andamento",
     "abortOperationTitle": "Abortar {{operation}}?",
     "abortOperationDescription": "Isso cancela a operação em andamento e pode descartar as resoluções de conflitos feitas durante ela.",
     "abortOperation": "Abortar {{operation}}",
     "recoveryFailed": "Não foi possível concluir a operação. Atualize o controle de código-fonte e tente novamente.",
-    "continueOperation": "Continuar {{operation}}",
     "reverting": "Revertendo",
     "updateActionsHost": "Atualize o Orca em {{host}} para executar ações em commits",
     "thisHost": "este host",

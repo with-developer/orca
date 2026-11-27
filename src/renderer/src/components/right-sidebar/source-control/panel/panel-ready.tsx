@@ -15,6 +15,7 @@ import {
   type SourceControlPanelActions
 } from './header-overflow-menu'
 import { useSourceControlScope } from './worktree-scope'
+import { SourceControlOperationBar } from './panel-operation-bar'
 
 export function SourceControlPanelReady(props: SourceControlPanelReadyProps) {
   const { currentWorktreeId, model, worktreePath } = props
@@ -156,19 +157,10 @@ export function SourceControlPanelReady(props: SourceControlPanelReadyProps) {
           branchLineTotal={branchLineTotal}
           compareBaseRef={compareBaseRef}
           headDisplay={gitIdentityDisplay}
-          rebase={
-            model.baseRebaseState.kind === 'none'
-              ? null
-              : {
-                  state: model.baseRebaseState,
-                  isAbortingRebase: model.isAbortingOperation,
-                  isContinuingRebase: model.isContinuingRebase,
-                  isRetryingRebaseInspect: model.isRetryingRebaseInspect,
-                  hasGitOwner: !!model.activeRepoTarget,
-                  onAbortRebase: () => void model.handleAbortRebase(),
-                  onContinueRebase: () => void model.handleContinueRebase(),
-                  onRetryRebaseInspect: model.handleRetryRebaseInspect
-                }
+          operationBar={
+            model.conflictOperation === 'unknown' ? null : (
+              <SourceControlOperationBar model={model} worktreeId={currentWorktreeId} />
+            )
           }
           graphControl={
             isGitHistoryVisible ? (

@@ -15702,7 +15702,6 @@
             "refreshAll": "Refresh all",
             "rebaseConflictCount_one": "{{count}} conflict",
             "rebaseConflictCount_other": "{{count}} conflicts",
-            "rebasePaused": "Rebase paused",
             "rebaseResolveConflictsFirst": "Resolve conflicts first",
             "rebaseAbort": "Abort",
             "rebaseContinue": "Continue",
@@ -15747,7 +15746,8 @@
             "scopeNoUncommitted": "No uncommitted changes.",
             "scopeCommitFiles": "Files",
             "gitGraphButton": "Graph",
-            "compareLoadingAgainst": "Comparing against {{base}}"
+            "compareLoadingAgainst": "Comparing against {{base}}",
+            "operationAbortConfirm": "Click again to abort"
           },
           "SourceControlAgentActionDialog": {
             "8e856842d1": "Could not start the selected agent.",
@@ -16358,15 +16358,7 @@
               "conflict": {
                 "status": {
                   "cards": {
-                    "5302a1ddba": "Merge conflicts",
-                    "7f3af87549": "Rebase conflicts",
-                    "6a8e9ad490": "Cherry-pick conflicts",
-                    "bdf8772106": "Conflicts",
-                    "edc2d82a2b": "Merge in progress",
-                    "5c3707aa44": "Rebase in progress",
-                    "ffe53a1da6": "Cherry-pick in progress",
-                    "35eb76d323": "Operation in progress",
-                    "completeMerge": "Complete merge"
+                    "bdf8772106": "Conflicts"
                   }
                 }
               },
@@ -31039,13 +31031,10 @@
     "loadFailed": "Failed to load Git history",
     "updateHost": "Update Orca on {{host}} to open the Git Graph",
     "title": "Git Graph",
-    "revertConflicts": "Revert conflicts",
-    "revertInProgress": "Revert in progress",
     "abortOperationTitle": "Abort {{operation}}?",
     "abortOperationDescription": "This cancels the operation in progress and can discard conflict resolutions made during it.",
     "abortOperation": "Abort {{operation}}",
     "recoveryFailed": "Could not finish the operation. Refresh Source Control and try again.",
-    "continueOperation": "Continue {{operation}}",
     "reverting": "Reverting",
     "updateActionsHost": "Update Orca on {{host}} to act on commits",
     "thisHost": "this host",

@@ -15214,7 +15214,6 @@
             "keepDeletion": "保留刪除",
             "refreshAll": "全部重新整理",
             "rebaseConflictCount_other": "{{count}} 個衝突",
-            "rebasePaused": "重定基底已暫停",
             "rebaseResolveConflictsFirst": "請先解決衝突",
             "rebaseAbort": "中止",
             "rebaseContinue": "繼續",
@@ -15864,15 +15863,7 @@
               "conflict": {
                 "status": {
                   "cards": {
-                    "5302a1ddba": "合併衝突",
-                    "7f3af87549": "變基衝突",
-                    "6a8e9ad490": "挑選衝突",
-                    "bdf8772106": "衝突",
-                    "edc2d82a2b": "合併正在進行中",
-                    "5c3707aa44": "變基正在進行中",
-                    "ffe53a1da6": "挑選正在進行中",
-                    "35eb76d323": "操作正在進行中",
-                    "completeMerge": "完成合併"
+                    "bdf8772106": "衝突"
                   }
                 }
               },
@@ -27888,13 +27879,10 @@
     "loadFailed": "無法載入 Git 歷史記錄",
     "updateHost": "請更新 {{host}} 上的 Orca 以開啟 Git 圖",
     "title": "Git 圖",
-    "revertConflicts": "還原提交衝突",
-    "revertInProgress": "正在還原提交",
     "abortOperationTitle": "中止{{operation}}？",
     "abortOperationDescription": "這會取消進行中的操作，並可能捨棄在此期間完成的衝突解決。",
     "abortOperation": "中止{{operation}}",
     "recoveryFailed": "無法完成操作。請重新整理原始碼管理後再試。",
-    "continueOperation": "繼續{{operation}}",
     "reverting": "正在還原提交",
     "updateActionsHost": "請更新{{host}}上的 Orca 以操作提交",
     "thisHost": "此主機",

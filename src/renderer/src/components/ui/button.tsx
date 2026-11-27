@@ -81,6 +81,10 @@ const buttonVariants = cva(
         'chat-tool':
           'text-chat-foreground-faint hover:bg-accent hover:text-chat-foreground aria-expanded:bg-accent aria-expanded:text-chat-foreground aria-pressed:bg-foreground/10 aria-pressed:text-primary aria-pressed:hover:text-primary dark:aria-pressed:bg-accent',
         // A small red failure chip the user can open, e.g. a failed rebase.
+        // A quiet Abort that confirms in place: muted at rest, destructive on hover, and tinted with
+        // an inset ring while data-armed waits for the second press. The ring keeps its width.
+        'ghost-arm-destructive':
+          'text-muted-foreground hover:bg-destructive/8 hover:text-destructive data-[armed=true]:bg-destructive/10 data-[armed=true]:text-destructive data-[armed=true]:inset-ring data-[armed=true]:inset-ring-destructive/35',
         'destructive-chip':
           'border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive'
       },
